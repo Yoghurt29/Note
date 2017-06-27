@@ -6,6 +6,9 @@ public class TreadTest {
 		// TODO Auto-generated constructor stub
 	}
 
+	public static void testThreadPoolExecutor(){
+		//TODO 學習線程池使用
+	}
 	public static void testDeadLock(){
 		ThreadProduct p=new ThreadProduct();
 		Object lock1=new Object();

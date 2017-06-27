@@ -25,7 +25,7 @@ public class TestHashCode {
 	}
 	public static void main(String[] args) throws NoSuchAlgorithmException {
 		// TODO Auto-generated method stub
-		System.out.println("BFEBFBFF000206A7".hashCode());
+		System.out.println("adadajoijyo".hashCode());
 	    System.out.println(getMD5("BFEBFBFF000206A7yo"));
         MessageDigest md = MessageDigest.getInstance("MD5");
         // 计算md5函数

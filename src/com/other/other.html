@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<head><meta charset="utf-8"></head>
+
+<h1>其他笔记</h1>
+<ol>
+    <li>
+        <b>数据库主键选择原则思考</b>
+        <p>
+            若本身字段能够做主键则直接使用
+            在mabatis上可以方便很多
+        </p>
+    </li>
+</ol>
+<h1>其他笔记</h1>
+<ol>
+    <li>
+        <b>MyBatis传入参数为集合 list 数组 map写法 http://blog.csdn.net/aya19880214/article/details/41961235</b>
+        <p>
+                    foreach的主要用在构建in条件中，它可以在SQL语句中进行迭代一个集合。foreach元素的属性主要有item，index，collection，open，separator，close。item表示集合中每一个元素进行迭代时的别名，index指定一个名字，用于表示在迭代过程中，每次迭代到的位置，open表示该语句以什么开始，separator表示在每次进行迭代之间以什么符号作为分隔符，close表示以什么结束，在使用foreach的时候最关键的也是最容易出错的就是collection属性，该属性是必须指定的，但是在不同情况下，该属性的值是不一样的，主要有一下3种情况： 
+                    如果传入的是单参数且参数类型是一个List的时候，collection属性值为list .
+                    如果传入的是单参数且参数类型是一个array数组的时候，collection的属性值为array .
+                    如果传入的参数是多个的时候，我们就需要把它们封装成一个Map了，当然单参数也可以封装成map，实际上如果你在传入参数的时候，在MyBatis里面也是会把它封装成一个Map的，map的key就是参数名，所以这个时候collection属性值就是传入的List或array对象在自己封装的map里面的key.
+                    下面我们通过代码实践:
+                    
+                    数据表:
+                    采用Oracle的HR.Employees表
+                            实体:Employees
+                    
+                    public class Employees {
+                        private Integer employeeId;
+                        private String firstName;
+                        private String lastName;
+                        private String email;
+                        private String phoneNumber;
+                        private Date hireDate;
+                        private String jobId;
+                        private BigDecimal salary;
+                        private BigDecimal commissionPct;
+                        private Integer managerId;
+                        private Short departmentId;
+                    }  
+                    映射文件:
+                    
+                        <!--List:forech中的collection属性类型是List,collection的值必须是:list,item的值可以随意,Dao接口中参数名字随意 -->
+                        <select id="getEmployeesListParams" resultType="Employees">
+                            select *
+                            from EMPLOYEES e
+                            where e.EMPLOYEE_ID in
+                            <foreach collection="list" item="employeeId" index="index"
+                                open="(" close=")" separator=",">
+                                #{employeeId}
+                            </foreach>
+                        </select>
+                    
+                        <!--Array:forech中的collection属性类型是array,collection的值必须是:list,item的值可以随意,Dao接口中参数名字随意 -->
+                        <select id="getEmployeesArrayParams" resultType="Employees">
+                            select *
+                            from EMPLOYEES e
+                            where e.EMPLOYEE_ID in
+                            <foreach collection="array" item="employeeId" index="index"
+                                open="(" close=")" separator=",">
+                                #{employeeId}
+                            </foreach>
+                        </select>
+                    
+                        <!--Map:不单单forech中的collection属性是map.key,其它所有属性都是map.key,比如下面的departmentId -->
+                        <select id="getEmployeesMapParams" resultType="Employees">
+                            select *
+                            from EMPLOYEES e
+                            <where>
+                                <if test="departmentId!=null and departmentId!=''">
+                                    e.DEPARTMENT_ID=#{departmentId}
+                                </if>
+                                <if test="employeeIdsArray!=null and employeeIdsArray.length!=0">
+                                    AND e.EMPLOYEE_ID in
+                                    <foreach collection="employeeIdsArray" item="employeeId"
+                                        index="index" open="(" close=")" separator=",">
+                                        #{employeeId}
+                                    </foreach>
+                                </if>
+                            </where>
+                        </select>
+                    
+                    Mapper类:
+                    public interface EmployeesMapper { 
+                    
+                        List<Employees> getEmployeesListParams(List<String> employeeIds);
+                    
+                        List<Employees> getEmployeesArrayParams(String[] employeeIds);
+                    
+                        List<Employees> getEmployeesMapParams(Map<String,Object> params);
+                    }
+                    
+                    http://blog.csdn.net/small____fish/article/details/8029030
+        </p>
+    </li>
+    <li>
+        <b>Hibernate update 和 merge 、saveOrUpdate的区别 http://www.cnblogs.com/ranger2016/p/3843917.html</b>
+        <div id="post_detail">
+	<div class="post">
+		<h2>
+			<a id="cb_post_title_url" href="http://www.cnblogs.com/ranger2016/p/3843917.html">Hibernate update 和 merge 、saveOrUpdate的区别</a>
+		</h2>
+		<div class="postbody">
+		<div id="cnblogs_post_body"><div class="cnblogs_code">
+<pre><span style="color: #0000ff;">this</span><span style="color: #000000;">.getSession().update(obj);
+
+</span><span style="color: #0000ff;">this</span><span style="color: #000000;">.getSession().merge(obj);
+
+</span><span style="color: #0000ff;">this</span>.getSession().saveOrUpdate(obj);</pre>
+</div>
+<p>1. update 和 merge的区别</p>
+<p>首先在执行更新操作的时候，两者都必须要有id</p>
+<p>update是直接执行update 语句，执行后状态为持久化状态</p>
+<p>而merge则不一样：</p>
+<p>0. 当调用update()时，首先要取保目标<b>session中，不包含同样id的实体对象的引用，如果有的话，会抛出异常</b></p>
+<p>1. 如果session中有与之对应的对象，也就是主键相同，则会把要保存的obj的值copy给session中的对象，然后update被复制后的session中的对象</p>
+<p>2. 如果session中没有，则会先从数据库中select，然后把obj给查出来的对象copy，则update查出来的对象。</p>
+<p>3. 所以merge会先select 再update</p>
+<p>4. 所以merge后原来的对象obj状态为脱管。</p>
+<p>&nbsp;</p>
+<p>================以下为摘抄=============</p>
+<p>二、save 和update区别<br />把这一对放在第一位的原因是因为这一对是最常用的。<br />save的作用是把一个新的对象保存<br />update是把一个脱管状态的对象或自由态对象（一定要和一个记录对应）更新到数据库</p>
+<p>三、update 和saveOrUpdate区别<br />这个是比较好理解的，顾名思义，saveOrUpdate基本上就是合成了save和update,而update只是update;引用hibernate reference中的一段话来解释他们的使用场合和区别<br />通常下面的场景会使用update()或saveOrUpdate()：&nbsp;<br />程序在第一个session中加载对象,接着把session关闭&nbsp;<br />该对象被传递到表现层&nbsp;<br />对象发生了一些改动&nbsp;<br />该对象被返回到业务逻辑层最终到持久层&nbsp;<br />程序创建第二session调用第二个session的update()方法持久这些改动</p>
+<p>saveOrUpdate(po)做下面的事:&nbsp;<br />如果该po对象已经在本session中持久化了，在本session中执行saveOrUpdate不做任何事&nbsp;<br />如果savaOrUpdate(新po)与另一个与本session关联的po对象拥有相同的持久化标识(identifier)，抛出一个异常&nbsp;<br />org.hibernate.NonUniqueObjectException: a different object with the same identifier value was already associated with the session: [org.itfuture.www.po.Xtyhb#5]<br />saveOrUpdate如果对象没有持久化标识(identifier)属性，对其调用save() ，否则update() 这个对象</p>
+<p>四、persist和save区别<br />这个是最迷离的一对，表面上看起来使用哪个都行，在hibernate reference文档中也没有明确的区分他们.<br />这里给出一个明确的区分。（可以跟进src看一下，虽然实现步骤类似，但是还是有细微的差别）<br />主要内容区别：<br />1，persist把一个瞬态的实例持久化，但是并"不保证"标识符(identifier主键对应的属性)被立刻填入到持久化实例中，标识符的填入可能被推迟到flush的时候。</p>
+<p>2，save, 把一个瞬态的实例持久化标识符，及时的产生,它要返回标识符，所以它会立即执行Sql insert</p>
+<p>五、saveOrUpdate,merge和update区别<br />比较update和merge<br />update的作用上边说了，这里说一下merge的<br />如果session中存在相同持久化标识(identifier)的实例，用用户给出的对象覆盖session已有的持久实例&nbsp;<br />(1)当我们使用update的时候，执行完成后，会抛出异常&nbsp;<br />(2)但当我们使用merge的时候，把处理自由态的po对象A的属性copy到session当中处于持久态的po的属性中，执行完成后原来是持久状态还是持久态，而我们提供的A还是自由态</p>
+<p>六、flush和update区别<br />这两个的区别好理解<br />update操作的是在自由态或脱管状态(因session的关闭而处于脱管状态)的对象//updateSQL<br />而flush是操作的在持久状态的对象。<br />默认情况下，一个持久状态的对象的改动（包含set容器）是不需要update的，只要你更改了对象的值，等待hibernate flush就自动更新或保存到数据库了。hibernate flush发生在以下几种情况中：<br />1， 调用某些查询的和手动flush(),session的关闭、SessionFactory关闭结合&nbsp;<br />get()一个对象，把对象的属性进行改变,把资源关闭。<br />2，transaction commit的时候（包含了flush）</p>
+<p>七、lock和update区别<br />update是把一个已经更改过的脱管状态的对象变成持久状态<br />lock是把一个没有更改过的脱管状态的对象变成持久状态(针对的是因Session的关闭而处于脱管状态的po对象(2)，不能针对因delete而处于脱管状态的po对象)<br />对应更改一个记录的内容，两个的操作不同：<br />update的操作步骤是：<br />(1)属性改动后的脱管的对象的修改-&gt;调用update<br />lock的操作步骤是：<br />(2)调用lock把未修改的对象从脱管状态变成持久状态--&gt;更改持久状态的对象的内容--&gt;等待flush或者手动flush<br />八、clear和evcit的区别<br />clear完整的清除session缓存<br />evcit(obj)把某个持久化对象从session的缓存中清空。</p>
+<p>&nbsp;</p></div><div id="MySignature"></div>
+<div class="clear"></div>
+        
+    </li>
+    <li>
+    	<h1>hibernate中对象的身份标识  http://www.fx114.net/qa-145-47532.aspx</h1>
+    	<p></p>
+    </li>
+</ol>
