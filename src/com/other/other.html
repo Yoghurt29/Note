@@ -136,4 +136,60 @@
     	<h1>hibernate中对象的身份标识  http://www.fx114.net/qa-145-47532.aspx</h1>
     	<p></p>
     </li>
+    <li>
+    	<h1>hibernate1+N get，load list iterator  http://blog.csdn.net/vivian5350/article/details/42086441</h1>
+			<div id="article_content" class="article_content tracking-ad" data-mod=popu_307  data-dsm = "post" >
+			
+			<h2><strong>什么时候会遇到1&#43;N的问题？&nbsp;</strong></h2>
+			<p>前提：Hibernate默认表与表的关联方法是fetch=&quot;select&quot;，不是fetch=&quot;join&quot;,这都是为了懒加载而准备的。 &nbsp;&nbsp;</p>
+			<p><br>
+			</p>
+			<p>1）一对多(&lt;set&gt;&lt;list&gt;) ，在1的这方，通过1条sql查找得到了1个对象，由于关联的存在 ，那么又需要将这个对象关联的集合取出，所以合集数量是n还要发出n条sql，于是本来的1条sql查询变成了1 &#43;n条 。 &nbsp;&nbsp;</p>
+			<p><br>
+			</p>
+			2）多对一&lt;many-to-one&gt; &nbsp;，在多的这方，通过1条sql查询得到了n个对象，由于关联的存在,也会将这n个对象对应的1 方的对象取出， 于是本来的1条sql查询变成了1 &#43;n条 。 &nbsp;&nbsp;<br>
+			3）iterator 查询时,一定先去缓存中找（1条sql查集合,只查出ID），在没命中时，会再按ID到库中逐一查找， 产生1&#43;n条SQL &nbsp;&nbsp;<br>
+			<br>
+			<br>
+			<h2><strong>怎么解决1&#43;N 问题？ &nbsp;&nbsp;</strong></h2>
+			<p>1 ）lazy=true， hibernate3开始已经默认是lazy=true了；lazy=true时不会立刻查询关联对象，只有当需要关联对象（访问其属性，非id字段）时才会发生查询动作。 &nbsp; &nbsp;</p>
+			<p><br>
+			</p>
+			<p>2）使用二级缓存， 二级缓存的应用将不怕1&#43;N 问题，因为即使第一次查询很慢（未命中），以后查询直接缓存命中也是很快的。刚好又利用了1&#43;N 。 &nbsp; &nbsp;</p>
+			<p><br>
+			</p>
+			<p>3) 当然你也可以设定fetch=&quot;join&quot;，一次关联表全查出来，但失去了懒加载的特性。 &nbsp;&nbsp;</p>
+			<p><br>
+			</p>
+			<h2><strong>List和Iterator &nbsp;</strong></h2>
+			<p>a. list--从数据库中查询出所有的对象列表；只能利用查询缓存（但在交易系统中查询缓存作用不大），无法利用二级缓存中的单个实体，但list查出的对象会写入二级缓存，但它一般只生成较少的执行SQL语句，很多情况就是一条（无关联）。 &nbsp;</p>
+			<p><br>
+			</p>
+			b. iterator--只从数据库中查询出所有的对象id；可以利用二级缓存，对于一条查询语句，它会先从数据库中找出所有符合条件的记录的ID，再通过ID去缓存找，对于缓存中没有的记录，再构造语句从数据库中查出，因此很容易知道，如果缓存中没有任何符合条件的记录，使用iterator会产生N&#43;1条SQL语句（N为符合条件的记录数） &nbsp;<br>
+			<p><br>
+			</p>
+			<h2><strong>load和get &nbsp;</strong></h2>
+			<p>Hibernate中有两个极为相&#20284;的方法get()与load(),他们都可以通过指定的实体类与ID从数据库中读取数据,并返回对应的实例,但Hibernate不会搞两个完全一样的方法的，它们间的不同在于: &nbsp;</p>
+			<p></p>
+			<ol>
+			<li>如果找不到符合条件的纪录，get()方法将返回null．而load()将会报出ObjectNotFoundEcception．<br>
+			</li><li>load()方法可以返回实体的代理类实例，而get()永远只返回实体类． &nbsp;<br>
+			</li><li>load()方法可以充分利用二级缓存和内部缓存的现有数据，而get()方法只在内部缓存中进行查找，如没有发现对应数据将跳过二级缓存，直接调用SQL完成查找．</li></ol>
+			<p></p>
+			&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;呵呵，没有说到根本点上，hibernate中get方法和load方法的根本区别在于：如果你使用load方法，hibernate认为该id对应的对象（数据库记录）在数据库中是一定存在的，所以它可以放心的使用，它可以放心的使用代理来延迟加载该对象。在用到对象中的其他属性数据时才查询数据库，但是万一数据库中不存在该记录，那没办法，只能抛异常，所说的load方法抛异常是指在使用该对象的数据时，数据库中不存在该数据时抛异常，而不是在创建这个对象时。由于session中的缓存对于hibernate来说是个相当廉价的资源，所以在load时会先查一下session缓存看看该id对应的对象是否存在，不存在则创建代理。所以如果你知道该id在数据库中一定有对应记录存在就可以使用load方法来实现延迟加载。
+			 &nbsp;<br>
+			<p><br>
+			</p>
+			<p>&nbsp; &nbsp; &nbsp; &nbsp; 对于get方法，hibernate会确认一下该id对应的数据是否存在，首先在session缓存中查找，然后在二级缓存中查找，还没有就查数据库，数据库中没有就返回null。 &nbsp;&nbsp;</p>
+			<p><br>
+			</p>
+			<p>&nbsp; &nbsp; &nbsp; &nbsp; 对于第2点，虽然好多书中都这么说：“get()永远只返回实体类”，但实际上这是不正确的，get方法如果在session缓存中找到了该id对应的对象，如果刚好该对象前面是被代理过的，如被load方法使用过，或者被其他关联对象延迟加载过，那么返回的还是原先的代理对象，而不是实体类对象，如果该代理对象还没有加载实体数据（就是id以外的其他属性数据），那么它会查询二级缓存或者数据库来加载数据，但是返回的还是代理对象，只不过已经加载了实体数据。 &nbsp;&nbsp;</p>
+			<p>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</p>
+			<p>&nbsp; &nbsp; &nbsp; &nbsp; 3。胡说八道，前面已经讲了，get方法首先查询session缓存，没有的话查询二级缓存，最后查询数据库；反而load方法创建时首先查询session缓存，没有就创建代理，实际使用数据时才查询二级缓存和数据库。 &nbsp;&nbsp;</p>
+			<p><br>
+			</p>
+			总之对于get和load的根本区别，一句话，hibernate对于load方法认为该数据在数据库中一定存在，可以放心的使用代理来延迟加载，如果在使用过程中发现了问题，只能抛异常；而对于get方法，hibernate一定要获取到真实的数据，否则返回null。
+			   
+			</div>
+    </li>
 </ol>
